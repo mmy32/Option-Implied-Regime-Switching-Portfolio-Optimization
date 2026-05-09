@@ -16,7 +16,6 @@ stock_returns = pd.read_csv(returns_path, index_col='Date', parse_dates=True)
 with open(params_path, 'rb') as f:
     regime_params = pickle.load(f)
 
-# Subset to just the last 3 years to make this run in ~10 minutes
 test_dates = macro_df.index[macro_df.index > '2023-01-01']
 macro_df = macro_df.loc[test_dates]
 stock_returns = stock_returns.loc[test_dates]
@@ -41,7 +40,7 @@ for mult in multipliers:
             Sigma_k = regime_params[current_regime]['cleaned_cov']
             active_mask = ~np.isnan(daily_returns)
             
-            # Artificially inflate the transaction cost
+            # Change transaction cost penalty for sensitivity
             lambda_pen = row['Bid_Ask_Spread'] * mult
             
             w_t = cp.Variable(n_assets)
@@ -76,4 +75,3 @@ plt.title('Stress Test: Average Weekly Turnover vs. Transaction Costs')
 plt.xlabel('Bid-Ask Spread Multiplier')
 plt.ylabel('Average Weekly Turnover (%)')
 plt.savefig(os.path.join(data_dir, 'fig_06_sensitivity.png'))
-print("Sensitivity analysis plotted and saved as fig_06_sensitivity.png")

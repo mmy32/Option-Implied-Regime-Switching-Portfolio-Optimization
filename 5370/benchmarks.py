@@ -38,8 +38,7 @@ with open(params_path, 'rb') as f:
 gamma = 2.0  
 n_assets = len(stock_returns.columns)
 
-# 1. Calculate 1/N Equal Weight Benchmark (Instant)
-print("Calculating 1/N Equal Weight Benchmark...")
+# 1. Calculate 1/N Equal Weight Benchmark
 equal_weight_returns = []
 for date in aligned_dates:
     daily_returns = stock_returns.loc[date].values
@@ -56,8 +55,7 @@ for date in aligned_dates:
 
 macro_df['1/N_Ret'] = equal_weight_returns
 
-# 2. Calculate Unpenalized Benchmark (Weekly Rebalance)
-print(f"Starting Unpenalized Optimization Benchmark...")
+# 2. Calculate Unpenalized Benchmark 
 unpenalized_returns = []
 w_prev = np.zeros(n_assets)
 rebalance_freq = 5 
@@ -78,7 +76,6 @@ for i, date in enumerate(tqdm(aligned_dates, desc="Optimizing Unpenalized")):
         expected_return = w_t.T @ mu_k
         risk_penalty = (gamma / 2) * cp.quad_form(w_t, Sigma_k)
         
-        # EXACT SAME OPTIMIZATION, BUT TRANSACTION PENALTY IS ZERO
         objective = cp.Maximize(expected_return - risk_penalty)
         
         constraints = [
@@ -102,7 +99,6 @@ for i, date in enumerate(tqdm(aligned_dates, desc="Optimizing Unpenalized")):
         sum_drift = np.sum(w_drift)
         w_optimal = w_drift / sum_drift if sum_drift > 0 else w_prev
         
-    # Subtract the transaction cost manually so we can see how much it bleeds the return!
     turnover = np.sum(np.abs(w_optimal - w_prev))
     cost = turnover * lambda_pen if i % rebalance_freq == 0 else 0
     
@@ -112,16 +108,12 @@ for i, date in enumerate(tqdm(aligned_dates, desc="Optimizing Unpenalized")):
 
 macro_df['Unpenalized_Ret'] = unpenalized_returns
 
-# 3. Plotting the Comparison 
 plt.figure(figsize=(14, 8))
 
-# Load your L1 Penalized Returns from the previous script
 macro_df['L1_Penalized_Ret'] = pd.read_csv(os.path.join(data_dir, '04_portfolio_weights.csv'), index_col=0).sum(axis=1) # Temporary dummy for plot alignment, we will use the actual returns
 cumulative_L1 = (1 + macro_df['Port_Ret']).cumprod() if 'Port_Ret' in macro_df.columns else (1 + pd.Series(unpenalized_returns)).cumprod() # Safety fallback
 
-# Correct loading of your L1 returns
 L1_returns = pd.read_csv(regimes_path, index_col='Date')['Port_Ret'] if 'Port_Ret' in pd.read_csv(regimes_path).columns else pd.read_csv(os.path.join(data_dir, '01_cleaned_macro.csv'))['SPX_Ret'] # Needs exact data tracking
-# Since we didn't save the raw returns in a separate file, let's recalculate the cumulative from the saved weights
 weights_df = pd.read_csv(os.path.join(data_dir, '04_portfolio_weights.csv'), index_col=0)
 aligned_returns = stock_returns.loc[weights_df.index]
 l1_daily_rets = (weights_df.values * np.nan_to_num(aligned_returns.values)).sum(axis=1)
@@ -134,7 +126,6 @@ plt.plot(weights_df.index, cumulative_L1, color='blue', label='Dynamic L1 Portfo
 plt.plot(weights_df.index, cumulative_unp, color='red', label='Unpenalized Mean-Variance (High Turnover)', alpha=0.7)
 plt.plot(weights_df.index, cumulative_eq, color='gray', label='1/N Equal Weight Benchmark', alpha=0.7)
 
-# To make the exponential curve readable, we use a logarithmic scale on the Y-axis
 plt.yscale('log')
 plt.title('Regime-Switching Strategy vs. Benchmarks (Log Scale)')
 plt.ylabel('Cumulative Wealth Multiplier (Log Scale)')
@@ -145,7 +136,6 @@ plt.tight_layout()
 
 plot_path = os.path.join(data_dir, 'benchmark_comparison_plot.png')
 plt.savefig(plot_path)
-print(f"\nBenchmark comparison plot saved to {plot_path}")
 
 # Print Comparative Metrics
 def print_metrics(name, rets):

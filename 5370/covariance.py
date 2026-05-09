@@ -10,11 +10,9 @@ returns_path = os.path.join(data_dir, '01_stock_returns.csv')
 macro_df = pd.read_csv(regimes_path, index_col='Date')
 stock_returns = pd.read_csv(returns_path, index_col='Date')
 
-# --- AGGRESSIVE DATE ALIGNMENT ---
 macro_df.index = pd.to_datetime(macro_df.index, errors='coerce').normalize()
 stock_returns.index = pd.to_datetime(stock_returns.index, errors='coerce').normalize()
 
-# Strip hidden timezones
 if macro_df.index.tz is not None:
     macro_df.index = macro_df.index.tz_localize(None)
 if stock_returns.index.tz is not None:
@@ -26,11 +24,9 @@ macro_df = macro_df[~macro_df.index.duplicated(keep='first')]
 stock_returns = stock_returns[~stock_returns.index.duplicated(keep='first')]
 
 aligned_dates = macro_df.index.intersection(stock_returns.index)
-print(f"Covariance Matrix: Successfully aligned {len(aligned_dates)} trading days between datasets.")
 
 macro_df = macro_df.loc[aligned_dates]
 stock_returns = stock_returns.loc[aligned_dates]
-# ---------------------------------
 
 returns_filled = stock_returns.fillna(0)
 asset_columns = stock_returns.columns
@@ -72,4 +68,3 @@ output_path = os.path.join(data_dir, '03_regime_params.pkl')
 with open(output_path, 'wb') as f:
     pickle.dump(regime_params, f)
 
-print(f"Cleaned covariance parameters saved.")

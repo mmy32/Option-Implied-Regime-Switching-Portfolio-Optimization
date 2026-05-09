@@ -4,7 +4,6 @@ import numpy as np
 
 data_dir = '/mnt/c/Users/Owner/5370'
 
-# File paths
 vix_vix3m_path = os.path.join(data_dir, 'vix_vix3m_ratio_daily.xlsx')
 vix_path = os.path.join(data_dir, 'vix_daily.xlsx')
 spx_xndx_path = os.path.join(data_dir, 'spx_xndx.xlsx')
@@ -13,7 +12,6 @@ rf_path = os.path.join(data_dir, 'riskfreerate.xlsx')
 spybidask_path = os.path.join(data_dir, 'spybidask.xlsx')
 stocks_path = os.path.join(data_dir, 'spx_coys.xlsx')
 
-print("Parsing macro data...")
 vix_vix3m = pd.read_excel(vix_vix3m_path, skiprows=6, header=None, usecols=[0, 12], names=['Date', 'VIX_VIX3M_Ratio'], parse_dates=['Date'], index_col='Date')
 vix = pd.read_excel(vix_path, skiprows=6, header=None, usecols=[0, 1], names=['Date', 'VIX_Close'], parse_dates=['Date'], index_col='Date')
 spx = pd.read_excel(spx_xndx_path, skiprows=6, header=None, usecols=[0, 1], names=['Date', 'SPX_Close'], parse_dates=['Date'], index_col='Date')
@@ -44,21 +42,17 @@ macro_df['Daily_RF'] = macro_df['RF_Rate'] / 100 / 252
 macro_df = macro_df.dropna()
 
 macro_df.to_csv(os.path.join(data_dir, '01_cleaned_macro.csv'))
-print("Macro data prepped.")
 
-print("Parsing exact layout for spx_coys.xlsx... this will take a moment.")
 raw_data = pd.read_excel(stocks_path, header=None)
 
 stock_series_list = []
 
-# Column K is index 10 in pandas.
-# Each stock block is 6 columns, plus 1 gap column (Q), making the step exactly 7.
+
 for start_col in range(10, raw_data.shape[1], 7):
-    # Safety check to ensure we don't read out of bounds
+    # Safety check
     if start_col + 4 >= raw_data.shape[1]:
         break
         
-    # Ticker is in Row 1 (index 0), above the 'Date' header
     ticker = str(raw_data.iloc[0, start_col]).strip()
     if ticker == 'nan' or not ticker:
         continue
@@ -67,7 +61,7 @@ for start_col in range(10, raw_data.shape[1], 7):
     raw_dates = raw_data.iloc[2:, start_col].values
     raw_prices = raw_data.iloc[2:, start_col + 4].values
     
-    # Clean the dates for this specific stock
+    # Clean the dates for this stock
     cleaned_dates = []
     for val in raw_dates:
         if pd.isna(val):
@@ -77,7 +71,7 @@ for start_col in range(10, raw_data.shape[1], 7):
         else:
             cleaned_dates.append(pd.to_datetime(val, errors='coerce'))
             
-    # Build a clean Series for the stock
+    # Build a clean series for the stock
     s = pd.Series(raw_prices, index=cleaned_dates, name=ticker)
     
     # Drop empty rows and duplicate dates just for this stock
@@ -88,16 +82,13 @@ for start_col in range(10, raw_data.shape[1], 7):
 
 print(f"Extracted {len(stock_series_list)} individual assets. Merging timelines...")
 
-# Combine all 500 individual series into one massive, properly aligned dataframe
 price_df = pd.concat(stock_series_list, axis=1)
 price_df.index = pd.DatetimeIndex(price_df.index).normalize()
 price_df.index.name = 'Date'
 
-# Force numeric values and compute log returns
 price_df = price_df.apply(pd.to_numeric, errors='coerce')
 stock_returns = np.log(price_df / price_df.shift(1))
 
 output_path = os.path.join(data_dir, '01_stock_returns.csv')
 stock_returns.to_csv(output_path)
 
-print(f"Success! Saved a {stock_returns.shape[0]} x {stock_returns.shape[1]} matrix of stock returns.")

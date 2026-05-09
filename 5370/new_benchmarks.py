@@ -19,7 +19,6 @@ macro_df = macro_df.loc[aligned_dates]
 weights_df = weights_df.loc[aligned_dates]
 stock_returns = stock_returns.loc[aligned_dates]
 
-# Reconstruct L1 and 1/N Returns
 active_mask = ~np.isnan(stock_returns.values)
 n_active = active_mask.sum(axis=1)
 eq_weights = np.where(active_mask, 1.0 / n_active[:, None], 0.0)
@@ -27,17 +26,13 @@ eq_weights = np.where(active_mask, 1.0 / n_active[:, None], 0.0)
 macro_df['L1_Ret'] = (weights_df.values * np.nan_to_num(stock_returns.values)).sum(axis=1)
 macro_df['Equal_Weight_Ret'] = (eq_weights * np.nan_to_num(stock_returns.values)).sum(axis=1)
 
-# Baseline 1: 60/40 Equity-Bond Portfolio
-# Assuming a standard 4% annual yield for the bond portion (0.04 / 252 daily)
 daily_bond_yield = 0.04 / 252
 macro_df['60_40_Ret'] = (0.60 * macro_df['Equal_Weight_Ret']) + (0.40 * daily_bond_yield)
 
-# Baseline 2: VIX Threshold Heuristic
-# If VIX > 30, reduce equity exposure to 50% (rest in 0% cash)
+
 if 'VIX_Close' in macro_df.columns:
     vix_series = macro_df['VIX_Close']
 else:
-    # Fallback if VIX_Close isn't in macro_df
     vix_series = pd.Series(20, index=macro_df.index)
 
 macro_df['VIX_Heuristic_Ret'] = np.where(
@@ -46,7 +41,6 @@ macro_df['VIX_Heuristic_Ret'] = np.where(
     macro_df['Equal_Weight_Ret']
 )
 
-# Plotting the expanded comparisons
 cumulative_L1 = (1 + macro_df['L1_Ret']).cumprod()
 cumulative_EQ = (1 + macro_df['Equal_Weight_Ret']).cumprod()
 cumulative_6040 = (1 + macro_df['60_40_Ret']).cumprod()
@@ -64,4 +58,3 @@ plt.ylabel('Cumulative Wealth Multiplier')
 plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'fig_05_expanded_baselines.png'))
-print("Expanded baselines plotted and saved as fig_05_expanded_baselines.png")

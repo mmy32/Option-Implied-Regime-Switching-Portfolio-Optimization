@@ -14,7 +14,6 @@ returns_path = os.path.join(data_dir, '01_stock_returns.csv')
 macro_df = pd.read_csv(regimes_path, index_col='Date')
 stock_returns = pd.read_csv(returns_path, index_col='Date')
 
-# --- AGGRESSIVE DATE ALIGNMENT ---
 macro_df.index = pd.to_datetime(macro_df.index, errors='coerce').normalize()
 stock_returns.index = pd.to_datetime(stock_returns.index, errors='coerce').normalize()
 
@@ -30,14 +29,13 @@ stock_returns = stock_returns[~stock_returns.index.duplicated(keep='first')]
 
 aligned_dates = macro_df.index.intersection(stock_returns.index)
 
-print(f"\n--- DIAGNOSTICS ---")
+print(f"\n DIAGNOSTICS")
 print(f"Macro dates range: {macro_df.index.min()} to {macro_df.index.max()} ({len(macro_df)} days)")
 print(f"Stock dates range: {stock_returns.index.min()} to {stock_returns.index.max()} ({len(stock_returns)} days)")
 print(f"Total overlapping days: {len(aligned_dates)}\n")
 
 macro_df = macro_df.loc[aligned_dates]
 stock_returns = stock_returns.loc[aligned_dates]
-# ---------------------------------
 
 with open(params_path, 'rb') as f:
     regime_params = pickle.load(f)
@@ -50,15 +48,13 @@ optimal_weights_history = []
 portfolio_returns = []
 w_prev = np.zeros(n_assets)
 
-print(f"Starting dynamic optimization backtest on {n_assets} assets...")
 
-rebalance_freq = 5  # Rebalance every 5 trading days (weekly)
+rebalance_freq = 5  # Rebalance weekly
 
 for i, date in enumerate(tqdm(aligned_dates, desc="Optimizing Portfolio")):
     row = macro_df.loc[date]
     daily_returns = stock_returns.loc[date].values
     
-    # Only run the heavy CVXPY math every 5 days
     if i % rebalance_freq == 0:
         current_regime = int(row['regime'])
         mu_k = regime_params[current_regime]['mu']
@@ -84,7 +80,6 @@ for i, date in enumerate(tqdm(aligned_dates, desc="Optimizing Portfolio")):
         problem = cp.Problem(objective, constraints)
         
         try:
-            # OSQP is much faster for sparse quadratic problems
             problem.solve(solver=cp.OSQP) 
             if problem.status in ["infeasible", "unbounded", None]:
                 w_optimal = w_prev
@@ -94,15 +89,12 @@ for i, date in enumerate(tqdm(aligned_dates, desc="Optimizing Portfolio")):
             w_optimal = w_prev
             
     else:
-        # On non-rebalance days, let the portfolio weights drift naturally with asset returns
         w_drift = w_prev * (1 + np.nan_to_num(daily_returns))
         sum_drift = np.sum(w_drift)
-        # Re-normalize to 1 (or default to w_prev if all assets dropped to 0 somehow)
         w_optimal = w_drift / sum_drift if sum_drift > 0 else w_prev
 
     optimal_weights_history.append(w_optimal)
     
-    # Calculate daily portfolio return
     port_ret = np.dot(w_optimal, np.nan_to_num(daily_returns))
     portfolio_returns.append(port_ret)
     
@@ -135,4 +127,3 @@ plt.tight_layout()
 
 plot_path = os.path.join(data_dir, 'cumulative_return_plot.png')
 plt.savefig(plot_path)
-print(f"Plot saved to {plot_path}")
