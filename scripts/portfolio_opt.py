@@ -6,7 +6,10 @@ import cvxpy as cp
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-data_dir = '/mnt/c/Users/Owner/5370'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+data_dir = os.path.join(project_root, 'data')
+report_dir = os.path.join(project_root, 'report')
 regimes_path = os.path.join(data_dir, '02_regimes_data.csv')
 params_path = os.path.join(data_dir, '03_regime_params.pkl')
 returns_path = os.path.join(data_dir, '01_stock_returns.csv')
@@ -61,31 +64,37 @@ for i, date in enumerate(tqdm(aligned_dates, desc="Optimizing Portfolio")):
         Sigma_k = regime_params[current_regime]['cleaned_cov']
         
         active_mask = ~np.isnan(daily_returns)
-        lambda_pen = row['Bid_Ask_Spread']
+        active_indices = np.where(active_mask)[0]
+        n_act = len(active_indices)
         
-        w_t = cp.Variable(n_assets)
-        expected_return = w_t.T @ mu_k
-        risk_penalty = (gamma / 2) * cp.quad_form(w_t, Sigma_k)
-        transaction_cost_penalty = lambda_pen * cp.norm(w_t - w_prev, 1)
-        
-        objective = cp.Maximize(expected_return - risk_penalty - transaction_cost_penalty)
-        
-        constraints = [
-            cp.sum(w_t) == 1, 
-            w_t >= 0,
-            w_t[~active_mask] == 0, 
-            w_t <= 0.05
-        ]
-        
-        problem = cp.Problem(objective, constraints)
-        
-        try:
-            problem.solve(solver=cp.OSQP) 
-            if problem.status in ["infeasible", "unbounded", None]:
+        if n_act > 0:
+            w_sub = cp.Variable(n_act)
+            w_prev_sub = w_prev[active_indices]
+            mu_sub = mu_k[active_indices]
+            Sigma_sub = Sigma_k[np.ix_(active_indices, active_indices)]
+            lambda_pen = row['Bid_Ask_Spread']
+            
+            expected_return = w_sub.T @ mu_sub
+            risk_penalty = (gamma / 2) * cp.quad_form(w_sub, Sigma_sub)
+            transaction_cost_penalty = lambda_pen * cp.norm(w_sub - w_prev_sub, 1)
+            
+            objective = cp.Maximize(expected_return - risk_penalty - transaction_cost_penalty)
+            constraints = [
+                cp.sum(w_sub) == 1,
+                w_sub >= 0,
+                w_sub <= 0.05
+            ]
+            problem = cp.Problem(objective, constraints)
+            try:
+                problem.solve(solver=cp.OSQP)
+                if problem.status in ["infeasible", "unbounded", None] or w_sub.value is None:
+                    w_optimal = w_prev
+                else:
+                    w_optimal = np.zeros(n_assets)
+                    w_optimal[active_indices] = w_sub.value
+            except Exception:
                 w_optimal = w_prev
-            else:
-                w_optimal = w_t.value
-        except Exception:
+        else:
             w_optimal = w_prev
             
     else:

@@ -7,7 +7,10 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-data_dir = '/mnt/c/Users/Owner/5370'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+data_dir = os.path.join(project_root, 'data')
+report_dir = os.path.join(project_root, 'report')
 input_path = os.path.join(data_dir, '01_cleaned_macro.csv')
 
 df = pd.read_csv(input_path, index_col='Date', parse_dates=True)

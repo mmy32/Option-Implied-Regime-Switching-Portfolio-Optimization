@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 
 plt.style.use('bmh')
 
-data_dir = '/mnt/c/Users/Owner/5370'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+data_dir = os.path.join(project_root, 'data')
+report_dir = os.path.join(project_root, 'report')
 regimes_path = os.path.join(data_dir, '02_regimes_data.csv')
 returns_path = os.path.join(data_dir, '01_stock_returns.csv')
 weights_path = os.path.join(data_dir, '04_portfolio_weights.csv')
@@ -58,3 +61,4 @@ plt.ylabel('Cumulative Wealth Multiplier')
 plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'fig_05_expanded_baselines.png'))
+plt.savefig(os.path.join(report_dir, 'fig_05_expanded_baselines.png'))

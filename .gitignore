@@ -1,2 +1,31 @@
-# Exclude files exceeding GitHub's 100MB file limit
-5370/spx_coys.xlsx
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# Python cache & Jupyter checkpoints
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# macOS system files
+.DS_Store
+
+# Large raw data (>100MB) & large generated data files (>50MB)
+data/spx_coys.xlsx
+data/01_stock_returns.csv
+data/03_regime_params.pkl
+data/04_portfolio_weights.csv
+*.pkl
+
+# LaTeX build artifacts (keep main.pdf, main.tex, references.bib, and figures)
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.log
+report/*.out
+report/*.toc
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz

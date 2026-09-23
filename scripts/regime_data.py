@@ -4,12 +4,15 @@ import numpy as np
 from hmmlearn import hmm
 import matplotlib.pyplot as plt
 
-current_dir = os.getcwd()
-all_files = os.listdir(current_dir)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+data_dir = os.path.join(project_root, 'data')
+report_dir = os.path.join(project_root, 'report')
+all_files = os.listdir(data_dir)
 
-vix_vix3m_path = next((f for f in all_files if 'vix_vix3m' in f.lower() and f.endswith('.xlsx')), None)
-vix_path = next((f for f in all_files if 'vix_daily' in f.lower() and f.endswith('.xlsx')), None)
-spx_path = next((f for f in all_files if 'spx' in f.lower() and f.endswith('.xlsx')), None)
+vix_vix3m_path = next((os.path.join(data_dir, f) for f in all_files if 'vix_vix3m' in f.lower() and f.endswith('.xlsx')), None)
+vix_path = next((os.path.join(data_dir, f) for f in all_files if 'vix_daily' in f.lower() and f.endswith('.xlsx')), None)
+spx_path = next((os.path.join(data_dir, f) for f in all_files if 'spx' in f.lower() and f.endswith('.xlsx')), None)
 
 vix_vix3m = pd.read_excel(vix_vix3m_path, skiprows=6, header=None, usecols=[0, 12], 
                         names=['Date', 'VIX_VIX3M_Ratio'], parse_dates=['Date'], index_col='Date')
@@ -56,7 +59,8 @@ plt.ylabel('SPX Price')
 plt.legend()
 plt.tight_layout()
 
-windows_dir = '/mnt/c/Users/Owner/5370'
+windows_dir = os.path.dirname(os.path.abspath(__file__))
+report_dir = os.path.abspath(os.path.join(windows_dir, '..', 'report'))
 plot_path = os.path.join(windows_dir, 'regimes_plot.png')
 
 

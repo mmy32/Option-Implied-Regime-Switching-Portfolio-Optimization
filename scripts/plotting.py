@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 # Set professional plotting style
 plt.style.use('bmh')
 
-data_dir = '/mnt/c/Users/Owner/5370'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+data_dir = os.path.join(project_root, 'data')
+report_dir = os.path.join(project_root, 'report')
 regimes_path = os.path.join(data_dir, '02_regimes_data.csv')
 weights_path = os.path.join(data_dir, '04_portfolio_weights.csv')
 returns_path = os.path.join(data_dir, '01_stock_returns.csv')
@@ -44,6 +47,7 @@ ax1.set_title('HMM Inferred Market Regimes vs Volatility Term Structure')
 fig.legend(loc='upper right', bbox_to_anchor=(0.9, 0.9))
 plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'fig_01_market_regimes.png'))
+plt.savefig(os.path.join(report_dir, 'fig_01_market_regimes.png'))
 plt.close()
 
 print("Generating Plot 2: Portfolio Drawdowns...")
@@ -65,6 +69,7 @@ plt.xlabel('Date')
 plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'fig_02_drawdowns.png'))
+plt.savefig(os.path.join(report_dir, 'fig_02_drawdowns.png'))
 plt.close()
 
 print("Generating Plot 3: 252-Day Rolling Volatility...")
@@ -80,6 +85,7 @@ plt.xlabel('Date')
 plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'fig_03_rolling_volatility.png'))
+plt.savefig(os.path.join(report_dir, 'fig_03_rolling_volatility.png'))
 plt.close()
 
 print("Generating Plot 4: Capital Allocation Stability (Top 10 Assets)...")
@@ -96,6 +102,7 @@ plt.xlabel('Date')
 plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'fig_04_weight_allocations.png'))
+plt.savefig(os.path.join(report_dir, 'fig_04_weight_allocations.png'))
 plt.close()
 
 print("Generating Table 1: Regime Characteristic Summary...")
